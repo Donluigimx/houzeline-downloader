@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
+	"downloader/lib/request"
 	"downloader/lib/storage"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -26,39 +23,36 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) {
 }
 
 func main() {
+	storageFactoryOpts := storage.NewFactoryOpts("", "")
+	log.WithFields(log.Fields{
+		"factory_opts": storageFactoryOpts,
+	}).Info("Storage Factory Opts created")
+
 	log.Info("Getting storage")
-	fs, err := storage.CreateStorage(storage.NewFactoryOpts("", ""))
+	fs, err := storage.NewStorage(storageFactoryOpts)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	requestFactoryOpst := request.NewFactoryOpts("")
+	log.WithFields(log.Fields{
+		"factory_opts": requestFactoryOpst,
+	}).Info("Request Factory Opts created")
+
+	log.Info("Getting request")
+	r, err := request.NewRequest(requestFactoryOpst)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	url := os.Getenv("PROPERTY_URL")
-	resp, err := http.Get(url)
+	response, err := r.Get(url)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.WithFields(log.Fields{
+		"key": response.Key,
+	}).Info("Storing file")
 
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	hashedUrl := fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
-	fileName := fmt.Sprintf("%s.html", hashedUrl)
-	log.WithField("file_name", fileName).Info("Storing file")
-	fs.Store(fileName, body)
-}
-
-func mainFake() {
-	resp, err := http.Get("https://www.casasyterrenos.com/propiedad/casa-renta-eulogio-parra-a-villa-senor-guadalajara-jal-2523534")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer resp.Body.Close()
+	fs.Store(response.Key, response.Body)
 }

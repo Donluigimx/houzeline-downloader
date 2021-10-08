@@ -10,22 +10,22 @@ type FactoryOpts struct {
 	FullPath    string
 }
 
-func NewFactoryOpts(StorageType string, FullPath string) *FactoryOpts {
-	if len(StorageType) == 0 {
-		StorageType = os.Getenv("STORAGE_TYPE")
+func NewFactoryOpts(storageType string, fullPath string) *FactoryOpts {
+	if len(storageType) == 0 {
+		storageType = os.Getenv("STORAGE_TYPE")
 	}
 
-	if len(FullPath) == 0 {
-		FullPath = os.Getenv("STORAGE_PATH")
+	if len(fullPath) == 0 {
+		fullPath = os.Getenv("STORAGE_PATH")
 	}
 
 	return &FactoryOpts{
-		StorageType,
-		FullPath,
+		storageType,
+		fullPath,
 	}
 }
 
-func CreateStorage(opts *FactoryOpts) (InternalStorage, error) {
+func NewStorage(opts *FactoryOpts) (InternalStorage, error) {
 	if opts.StorageType == "file" {
 		if len(opts.FullPath) == 0 {
 			return nil, errors.New("FullPath missing from options")
